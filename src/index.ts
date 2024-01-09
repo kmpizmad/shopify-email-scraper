@@ -15,3 +15,5 @@ server.use('/', router);
 server.listen(8080, () => {
   logger.info('Server started.');
 });
+
+export default server;

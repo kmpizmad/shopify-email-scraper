@@ -27,17 +27,22 @@ async function getPageContent(page: Page): Promise<string[]> {
     throw new Error('Inactive website');
   }
 
-  return await page.evaluate(() => {
+  const emailElements = await page.evaluate(() => {
+    const content = Array.from(document.querySelectorAll('a[href^="mailto:"]')) as HTMLAnchorElement[];
+    return content.map(element => element.outerHTML);
+  });
+
+  const pageContent = await page.evaluate(() => {
     const content = Array.from(document.querySelectorAll('*')) as HTMLElement[];
     const validElements = content.filter(element => {
       if (element?.id === 'shop-not-found') {
         throw new Error('Invalid url');
       }
-      return !!element.innerText || !!(element as unknown as HTMLAnchorElement)?.href;
+      return !!element.innerText;
     });
 
     return validElements.map(element => {
-      if (!!(element as HTMLAnchorElement)?.href && (element as HTMLAnchorElement).href.includes('mailto:')) {
+      if ((element as HTMLAnchorElement)?.href?.includes('mailto:')) {
         return (element as HTMLAnchorElement).href.split(':')[1];
       }
       if (element.tagName.toLowerCase() === 'summary') {
@@ -48,6 +53,8 @@ async function getPageContent(page: Page): Promise<string[]> {
       return element.innerText;
     }) as string[];
   });
+
+  return [...emailElements, ...pageContent];
 }
 
 function extractEmails(pageContent: string[]): string[] {
